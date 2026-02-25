@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 
+const API = process.env.REACT_APP_API_URL;
+
 function SlotBooking() {
-  const [day, setDay] = useState("");
+  const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [phone, setPhone] = useState("");
-  const [bookedSlots, setBookedSlots] = useState("");
+  const [bookedSlots, setBookedSlots] = useState([]);
   const [message, setMessage] = useState("");
 
   const timeSlots = [
@@ -21,39 +23,40 @@ function SlotBooking() {
 
   // Fetch bookings on load
   useEffect(() => {
-    fetch("http://localhost:5000/bookings")
+    fetch(`${API}/bookings`)
       .then(res => res.json())
-      .then(data => setBookedSlots(data));
+      .then(data => setBookedSlots(data))
+      .catch(() => setBookedSlots([]));
   }, []);
 
   const isSlotBooked = (d, t) => {
-    return bookedSlots.some(b => b.day === d && b.time === t);
+    return bookedSlots.some(b => b.date === d && b.time === t);
   };
 
   const handleSubmit = async () => {
     setMessage("");
 
-    const res = await fetch("http://localhost:5000/book", {
+    const res = await fetch(`${API}/book`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ day, time, name, age, phone })
+      body: JSON.stringify({ date, time, name, age, phone })
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      setMessage(data.message);
+      setMessage(data.message || "Booking failed");
       return;
     }
 
     setMessage("✅ Slot booked successfully!");
 
     // Refresh bookings
-    const updated = await fetch("http://localhost:5000/bookings");
+    const updated = await fetch(`${API}/bookings`);
     setBookedSlots(await updated.json());
 
     // Reset form
-    setDay("");
+    setDate("");
     setTime("");
     setName("");
     setAge("");
@@ -65,7 +68,7 @@ function SlotBooking() {
       <h2>Geriatric Daycare Slot Booking</h2>
 
       <label>Day</label>
-      <select value={day} onChange={e => setDay(e.target.value)}>
+      <select value={date} onChange={e => setDate(e.target.value)}>
         <option value="">Select Day</option>
         <option>Mon</option>
         <option>Tue</option>
@@ -84,9 +87,9 @@ function SlotBooking() {
           <option
             key={slot}
             value={slot}
-            disabled={isSlotBooked(day, slot)}
+            disabled={isSlotBooked(date, slot)}
           >
-            {slot} {isSlotBooked(day, slot) ? "(Booked)" : ""}
+            {slot} {isSlotBooked(date, slot) ? "(Booked)" : ""}
           </option>
         ))}
       </select>
